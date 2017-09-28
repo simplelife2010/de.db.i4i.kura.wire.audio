@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaData xmlns="http://www.osgi.org/xmlns/metatype/v1.2.0" localization="en_us">
+    <OCD id="de.db.i4i.kura.wire.audio.AudioCollector" 
+         name="AudioCollector" 
+         description="A wire component that reads audio data from an input device and emits this to wire consumers">
+
+		<AD id="mixer.name"
+            name="mixer.name"
+            type="String"
+            cardinality="0"
+            required="true"
+            default="DefaultMixer"
+            description="The name of the mixer to read audio from">
+        </AD>
+        
+        <AD id="volume.level"
+            name="volume.level"
+            type="Float"
+            cardinality="0"
+            required="true"
+            default="0.5"
+            min="0"
+            max="1"
+            description="The volume level (0-1) for the analog input">
+        </AD>
+
+        <AD id="sample.rate"
+            name="sample.rate"
+            type="Float"
+            cardinality="0"
+            required="true"
+            default="44100.0"
+            description="The number of samples per second">
+            <Option label="22,05kHz" value="22050.0" />
+			<Option label="44,1kHz" value="44100.0" />
+			<Option label="48kHz" value="48000.0" />
+			<Option label="88,2kHz" value="88200.0" />
+			<Option label="96kHz" value="96000.0" />
+        </AD>
+
+        <AD id="sample.size"
+            name="sample.size"
+            type="Integer"
+            cardinality="0"
+            required="true"
+            default="16"
+            description="The number of bits in each sample">
+            <Option label="8bit" value="8" />
+			<Option label="16bit" value="16" />
+			<Option label="24bit" value="24" />
+        </AD>
+        
+        <AD id="channels"
+            name="channels"
+            type="Integer"
+            cardinality="0"
+            required="true"
+            default="1"
+            description="The number of channels (Mono/Stereo)">
+            <Option label="Mono" value="1" />
+			<Option label="Stereo" value="2" />
+        </AD>
+        
+        <AD id="signed"
+            name="signed"
+            type="Boolean"
+            cardinality="0"
+            required="true"
+            default="true"
+            description="Indicates whether the data is signed or unsigned">
+            <Option label="Signed" value="true" />
+			<Option label="Unsigned" value="false" />
+        </AD>
+        
+        <AD id="big.endian"
+            name="big.endian"
+            type="Boolean"
+            cardinality="0"
+            required="true"
+            default="false"
+            description="Indicates whether the data for a single sample is stored in big-endian byte order">
+            <Option label="Big-endian" value="true" />
+			<Option label="Little-endian" value="false" />
+        </AD>
+        
+        <AD id="buffer.size"
+            name="buffer.size"
+            type="Integer"
+            cardinality="0"
+            required="true"
+            default="65536"
+            description="The size of the audio capture buffer in bytes">
+        </AD>
+        
+    </OCD>
+    
+    <Designate pid="de.db.i4i.kura.wire.audio.AudioCollector" factoryPid="de.db.i4i.kura.wire.audio.AudioCollector">
+        <Object ocdref="de.db.i4i.kura.wire.audio.AudioCollector"/>
+    </Designate>
+</MetaData>

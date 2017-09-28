@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaData xmlns="http://www.osgi.org/xmlns/metatype/v1.2.0" localization="en_us">
+    <OCD id="de.db.i4i.kura.wire.audio.AudioFileReader" 
+         name="AudioFileReader" 
+         description="A wire component that reads audio data from an input file and emits this to wire consumers">
+
+		<AD id="path"
+            name="path"
+            type="String"
+            cardinality="0"
+            required="true"
+            default="/tmp"
+            description="The path to read an audio file from">
+        </AD>
+        
+        <AD id="filename"
+            name="filename"
+            type="String"
+            cardinality="0"
+            required="true"
+            default="audio.wav"
+            description="The file to read audio from">
+        </AD>
+        
+    </OCD>
+    
+    <Designate pid="de.db.i4i.kura.wire.audio.AudioFileReader" factoryPid="de.db.i4i.kura.wire.audio.AudioFileReader">
+        <Object ocdref="de.db.i4i.kura.wire.audio.AudioFileReader"/>
+    </Designate>
+</MetaData>

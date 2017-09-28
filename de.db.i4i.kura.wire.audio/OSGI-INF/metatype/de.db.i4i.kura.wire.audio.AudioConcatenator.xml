@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaData xmlns="http://www.osgi.org/xmlns/metatype/v1.2.0" localization="en_us">
+    <OCD id="de.db.i4i.kura.wire.audio.AudioConcatenator" 
+         name="AudioConcatenator" 
+         description="A wire component that writes audio data to a file">
+
+		<AD id="concatenation.duration"
+            name="concatenation.duration"
+            type="Integer"
+            cardinality="0"
+            required="true"
+            default="10"
+            description="The duration of the concatenated audio sample in seconds">
+        </AD>
+
+    </OCD>
+    
+    <Designate pid="de.db.i4i.kura.wire.audio.AudioConcatenator" factoryPid="de.db.i4i.kura.wire.audio.AudioConcatenator">
+        <Object ocdref="de.db.i4i.kura.wire.audio.AudioConcatenator"/>
+    </Designate>
+</MetaData>
