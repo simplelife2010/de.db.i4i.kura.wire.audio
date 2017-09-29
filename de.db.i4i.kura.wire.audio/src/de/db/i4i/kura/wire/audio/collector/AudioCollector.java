@@ -1,13 +1,18 @@
 package de.db.i4i.kura.wire.audio.collector;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.Objects.isNull;
+import static java.util.Objects.requireNonNull;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.TargetDataLine;
 
 import org.eclipse.kura.configuration.ConfigurableComponent;
 import org.eclipse.kura.type.TypedValue;
@@ -32,8 +37,7 @@ public class AudioCollector implements WireEmitter, WireReceiver, ConfigurableCo
 	private WireSupport wireSupport;
 	
 	private AudioCollectorOptions options;
-	private long lastReadTimestamp = System.currentTimeMillis();
-	private double t = 0;
+	private TargetDataLine targetDataLine;
 
 	public void bindWireHelperService(final WireHelperService wireHelperService) {
         if (isNull(this.wireHelperService)) {
@@ -51,17 +55,21 @@ public class AudioCollector implements WireEmitter, WireReceiver, ConfigurableCo
 		logger.debug("Activating AudioCollector...");
 		wireSupport = this.wireHelperService.newWireSupport(this);
         this.extractProperties(properties);
+        startRecording();
         logger.debug("Activating AudioCollector... Done");
 	}
-	
+
 	protected synchronized void deactivate() {
 		logger.debug("Deactivating AudioCollector...");
+		stopRecording();
         logger.debug("Deactivating AudioCollector... Done");
 	}
 	
 	public synchronized void updated(final Map<String, Object> properties) {
 		logger.debug("Updating AudioCollector...");
+		stopRecording();
         this.extractProperties(properties);
+        startRecording();
         logger.debug("Updating AudioCollector... Done");
 	}
 	
@@ -70,24 +78,28 @@ public class AudioCollector implements WireEmitter, WireReceiver, ConfigurableCo
 		requireNonNull(wireEnvelope, "Wire envelope must not be null");
 		logger.debug("Received wire envelope from {}", wireEnvelope.getEmitterPid());
 
-    	int a = this.available();
-    	logger.debug("Available bytes: {}", a);
+		int bufferSize = this.targetDataLine.getBufferSize();
+		byte[] audioData = new byte[bufferSize];
+		int availableBytes = this.targetDataLine.available();
+		int bytesRead = this.targetDataLine.read(audioData, 0, availableBytes);
+		long now = System.currentTimeMillis();
+		logger.debug("Read {} of {} available bytes into buffer of size {}", bytesRead, availableBytes, bufferSize);
+		if (availableBytes == bufferSize) {
+			logger.warn("Buffer size exceeded, some audio data was lost");
+		}
     	
-    	long now = System.currentTimeMillis();
-    	long timeElapsed = 1000 * (a * 8 / this.options.getSampleSize()) / this.options.getSampleRate().longValue();
-    	logger.debug("Time elapsed since last received envelope: {}ms", timeElapsed);
-    	byte[] b = new byte[a];
-    	int r = this.read(b, 0, a);
-    	logger.debug("Read {} of {} available bytes", r, a);
+		Float sampleRate = this.options.getSampleRate();
+		Integer sampleSize = this.options.getSampleSize();
 
     	final Map<String, TypedValue<?>> properties = new HashMap<>();
     	properties.put(AudioWireRecordProperties.SOURCE, TypedValues.newStringValue(this.options.getKuraServicePid()));
-    	properties.put(AudioWireRecordProperties.TIMESTAMP, TypedValues.newLongValue(now - timeElapsed));
-    	properties.put(AudioWireRecordProperties.AUDIO_DATA, TypedValues.newByteArrayValue(b));
+    	properties.put(AudioWireRecordProperties.TIMESTAMP, TypedValues.newLongValue(
+    			now - bytesRead * 8000 / (sampleSize * sampleRate.longValue())));
+    	properties.put(AudioWireRecordProperties.AUDIO_DATA, TypedValues.newByteArrayValue(audioData));
     	properties.put(AudioWireRecordProperties.BIG_ENDIAN, TypedValues.newBooleanValue(this.options.isBigEndian()));
     	properties.put(AudioWireRecordProperties.CHANNELS, TypedValues.newIntegerValue(this.options.getChannels()));
-    	properties.put(AudioWireRecordProperties.SAMPLE_RATE, TypedValues.newFloatValue(this.options.getSampleRate()));
-    	properties.put(AudioWireRecordProperties.SAMPLE_SIZE, TypedValues.newIntegerValue(this.options.getSampleSize()));
+    	properties.put(AudioWireRecordProperties.SAMPLE_RATE, TypedValues.newFloatValue(sampleRate));
+    	properties.put(AudioWireRecordProperties.SAMPLE_SIZE, TypedValues.newIntegerValue(sampleSize));
     	properties.put(AudioWireRecordProperties.SIGNED, TypedValues.newBooleanValue(this.options.isSigned()));
     	
     	final WireRecord audioCollectorWireRecord = new WireRecord(properties);
@@ -122,34 +134,41 @@ public class AudioCollector implements WireEmitter, WireReceiver, ConfigurableCo
         requireNonNull(properties, "Properties cannot be null");
         this.options = new AudioCollectorOptions(properties);
     }
-    
-    private int available() {
-    	long now = System.currentTimeMillis();
-    	long timeElapsed = now - this.lastReadTimestamp;
-    	this.lastReadTimestamp = now;
-    	Long available = this.options.getSampleSize() * this.options.getSampleRate().longValue() * timeElapsed / 8000;
-    	return Math.round(available.intValue() / 2) * 2;
-    }
-    
-    private int read(byte[] b, int off, Integer len) {
-    	double amp = 12000;
-    	double f = 400;
-    	double sr = this.options.getSampleRate().doubleValue();
-    	for (int i = 0; i < len; i += 2) {
-    		Integer value = this.waveform(this.t, amp, f);
-    		ByteBuffer dbuf = ByteBuffer.allocate(2);
-    		dbuf.putShort(value.shortValue());
-    		byte[] bytes = dbuf.array();
-    		b[i + off] = bytes[1];
-    		b[i + 1 + off] = bytes[0];
-    		t += 1 / sr;
-    	}
-    	return len;
-    }
-    
-    private int waveform(double t, double amp, double f) {
-    	double pi = 3.1415926536;
-    	Double result = amp * Math.sin(2 * pi * f * t);
-    	return result.intValue();
-    }
+	
+	
+	private void startRecording() {
+		AudioFormat audioFormat = new AudioFormat(
+				this.options.getSampleRate(),
+				this.options.getSampleSize(),
+				this.options.getChannels(),
+				this.options.isSigned(),
+				this.options.isBigEndian());
+		DataLine.Info info = new DataLine.Info(TargetDataLine.class, audioFormat);
+		if (AudioSystem.isLineSupported(info)) {
+			try {
+				logger.debug("Obtaining line...");
+				this.targetDataLine = (TargetDataLine) AudioSystem.getLine(info);
+				logger.debug("Obtaining line...Done");
+				logger.debug("Opening line...");
+				this.targetDataLine.open(audioFormat, this.options.getBufferSize());
+				logger.debug("Opening line...Done");
+				logger.debug("Starting line...");
+				this.targetDataLine.start();
+				logger.debug("Starting line...Done");
+			} catch (LineUnavailableException e) {
+				logger.error("Cannot create/open line: {}", audioFormat.toString());
+			}
+		} else {
+			logger.error("Line is not supported: {}", audioFormat.toString());
+			this.targetDataLine = null;
+		}
+	}
+	
+	private void stopRecording() {
+		logger.debug("Closing line...");
+		this.targetDataLine.stop();
+		this.targetDataLine.close();
+		this.targetDataLine = null;
+		logger.debug("Closing line...Done");
+	}
 }
