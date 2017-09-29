@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaData xmlns="http://www.osgi.org/xmlns/metatype/v1.2.0" localization="en_us">
+    <OCD id="de.db.i4i.kura.wire.audio.AudioFeatureExtractor" 
+         name="AudioFeatureExtractor" 
+         description="A wire component that extracts features from audio files using Python scripts">
+        
+        <AD id="script.path"
+            name="script.path"
+            type="String"
+            cardinality="0"
+            required="true"
+            default="/opt/i4i/scripts/features"
+            description="The path where the feature extraction script is located">
+        </AD>
+        
+        <AD id="script.filename"
+            name="script.filename"
+            type="String"
+            cardinality="0"
+            required="true"
+            default="feature.py"
+            description="The name of the feature extraction script">
+        </AD>
+        
+    </OCD>
+    
+    <Designate pid="de.db.i4i.kura.wire.audio.AudioFeatureExtractor" factoryPid="de.db.i4i.kura.wire.audio.AudioFeatureExtractor">
+        <Object ocdref="de.db.i4i.kura.wire.audio.AudioFeatureExtractor"/>
+    </Designate>
+</MetaData>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0"
+    name="de.db.i4i.kura.wire.audio.AudioFeatureExtractor"
+    activate="activate" 
+    deactivate="deactivate" 
+    modified="updated" 
+    enabled="true" 
+    configuration-policy="require">
+   <implementation class="de.db.i4i.kura.wire.audio.featureextractor.AudioFeatureExtractor"/>
+   <property name="service.pid" value="de.db.i4i.kura.wire.audio.AudioFeatureExtractor"/>
+   <service>
+      <provide interface="org.eclipse.kura.configuration.ConfigurableComponent"/>
+      <provide interface="org.eclipse.kura.wire.WireComponent"/>
+      <provide interface="org.eclipse.kura.wire.WireEmitter"/>
+      <provide interface="org.eclipse.kura.wire.WireReceiver"/>
+      <provide interface="org.osgi.service.wireadmin.Producer"/>
+      <provide interface="org.osgi.service.wireadmin.Consumer"/>
+   </service>
+   <reference bind="bindWireHelperService"
+   	          cardinality="1..1"
+   	          interface="org.eclipse.kura.wire.WireHelperService"
+   	          name="WireHelperService"
+   	          policy="static"
+   	          unbind="unbindWireHelperService"/>
+</scr:component>

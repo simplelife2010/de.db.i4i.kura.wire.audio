@@ -88,7 +88,7 @@ public class AudioFileWriter implements WireEmitter, WireReceiver, ConfigurableC
     	requireNonNull(wireEnvelope, "Wire envelope must not be null");
 		logger.debug("Received wire envelope with {} record(s) from {}", wireEnvelope.getRecords().size(), wireEnvelope.getEmitterPid());
 		
-		final List<WireRecord> audioFileWriterRecords = new ArrayList<>();
+		final List<WireRecord> audioFileWriterWireRecords = new ArrayList<>();
 		for (WireRecord record : wireEnvelope.getRecords()) {
       
             String source = (String) getPropertyValue(record, DataType.STRING, AudioWireRecordProperties.SOURCE);
@@ -141,12 +141,12 @@ public class AudioFileWriter implements WireEmitter, WireReceiver, ConfigurableC
         	final WireRecord audioCollectorWireRecord = new WireRecord(properties);
         	logger.debug("Creating output record for source {}",
         			source);
-        	audioFileWriterRecords.add(audioCollectorWireRecord);
+        	audioFileWriterWireRecords.add(audioCollectorWireRecord);
         }
-		Integer numberOfRecords = audioFileWriterRecords.size();
+		Integer numberOfRecords = audioFileWriterWireRecords.size();
 		logger.debug("Emitting {} record(s)...", numberOfRecords);
 		if (numberOfRecords > 0) {
-	    	wireSupport.emit(audioFileWriterRecords);
+	    	wireSupport.emit(audioFileWriterWireRecords);
 		}
 		logger.debug("Emitting...done");
 	}
