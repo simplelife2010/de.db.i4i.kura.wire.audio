@@ -94,6 +94,7 @@ private static final Logger logger = LoggerFactory.getLogger(AudioConcatenator.c
 	public void onWireReceive(WireEnvelope wireEnvelope) {
 		requireNonNull(wireEnvelope, "Wire envelope must not be null");
 		logger.debug("Received wire envelope with {} record(s) from {}", wireEnvelope.getRecords().size(), wireEnvelope.getEmitterPid());
+		long envelopeTimer = System.currentTimeMillis();
 		
 		final List<WireRecord> audioCollectorRecords = new ArrayList<>();
 		for (WireRecord record : wireEnvelope.getRecords()) {
@@ -129,13 +130,13 @@ private static final Logger logger = LoggerFactory.getLogger(AudioConcatenator.c
             if (this.audioBuffers.containsKey(key)) {
             	audioBuffer = audioBuffers.get(key);
             } else {
-            	audioBuffer = ByteBuffer.allocate(2 * numberOfBytes);
+            	audioBuffer = ByteBuffer.allocate(5 * numberOfBytes);
             	audioBuffers.put(key, audioBuffer);
             }
             try {
 				audioBuffer.put(audioData);
 			} catch (BufferOverflowException e) {
-				logger.error("Source {}: Buffer capacity ({} bytes) exceeded trying to put {} bytes",
+				logger.warn("Source {}: Buffer capacity ({} bytes) exceeded trying to put {} bytes",
 						source, audioBuffer.capacity(), audioData.clone().length);
 			}
             logger.debug("Source {}: Buffer contains {} seconds of audio ({} bytes)",
@@ -163,6 +164,7 @@ private static final Logger logger = LoggerFactory.getLogger(AudioConcatenator.c
             }
         }
 		Integer numberOfRecords = audioCollectorRecords.size();
+		logger.debug("Envelope took {}ms to process", System.currentTimeMillis() - envelopeTimer);
 		logger.debug("Emitting {} record(s)...", numberOfRecords);
 		if (numberOfRecords > 0) {
 	    	wireSupport.emit(audioCollectorRecords);

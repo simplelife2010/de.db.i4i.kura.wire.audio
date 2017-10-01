@@ -101,6 +101,7 @@ private static final Logger logger = LoggerFactory.getLogger(AudioFileReader.cla
 		
 		requireNonNull(wireEnvelope, "Wire envelope must not be null");
 		logger.debug("Received wire envelope from {}", wireEnvelope.getEmitterPid());
+		long envelopeTimer = System.currentTimeMillis();
 		
 		String pathname = this.options.getPath() + "/" + this.options.getFilename();
 		if (isNull(this.audioInputStream)) {
@@ -172,6 +173,7 @@ private static final Logger logger = LoggerFactory.getLogger(AudioFileReader.cla
     	final WireRecord audioFileReaderWireRecord = new WireRecord(properties);
     	final List<WireRecord> audioFileReaderWireRecords = new ArrayList<>();
     	audioFileReaderWireRecords.add(audioFileReaderWireRecord);
+    	logger.debug("Envelope took {}ms to process", System.currentTimeMillis() - envelopeTimer);
         logger.debug("Emitting {} record(s)...", audioFileReaderWireRecords.size());
     	wireSupport.emit(audioFileReaderWireRecords);
     	logger.debug("Emitting...done");

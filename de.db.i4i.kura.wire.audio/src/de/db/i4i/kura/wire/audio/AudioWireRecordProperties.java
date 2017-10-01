@@ -11,4 +11,5 @@ public class AudioWireRecordProperties {
 	public static final String BIG_ENDIAN = "big_endian";
 	public static final String PATH = "path";
 	public static final String FILENAME = "filename";
+	public static final String MAGNITUDE_SPECTRUM = "magnitude_spectrum";
 }

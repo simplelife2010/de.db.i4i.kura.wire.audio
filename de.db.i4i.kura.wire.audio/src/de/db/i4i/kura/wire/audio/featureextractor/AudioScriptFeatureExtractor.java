@@ -31,14 +31,14 @@ import org.slf4j.LoggerFactory;
 
 import de.db.i4i.kura.wire.audio.AudioWireRecordProperties;
 
-public class AudioFeatureExtractor implements ConfigurableComponent, WireEmitter, WireReceiver {
+public class AudioScriptFeatureExtractor implements ConfigurableComponent, WireEmitter, WireReceiver {
 	
-	private static final Logger logger = LoggerFactory.getLogger(AudioFeatureExtractor.class);
+	private static final Logger logger = LoggerFactory.getLogger(AudioScriptFeatureExtractor.class);
 	
     private volatile WireHelperService wireHelperService;
 	private WireSupport wireSupport;
 	
-	private AudioFeatureExtractorOptions options;
+	private AudioScriptFeatureExtractorOptions options;
 
 	public void bindWireHelperService(final WireHelperService wireHelperService) {
         if (isNull(this.wireHelperService)) {
@@ -95,6 +95,7 @@ public class AudioFeatureExtractor implements ConfigurableComponent, WireEmitter
 		requireNonNull(wireEnvelope, "Wire envelope must not be null");
 		logger.debug("Received wire envelope with {} record(s) from {}", wireEnvelope.getRecords().size(),
 				wireEnvelope.getEmitterPid());
+		long envelopeTimer = System.currentTimeMillis();
 		
 		String scriptPathName = this.options.getScriptPath() + "/" + this.options.getScriptFilename();
 		logger.debug("Script path name: {}", scriptPathName);
@@ -104,20 +105,18 @@ public class AudioFeatureExtractor implements ConfigurableComponent, WireEmitter
 			
 			final Map<String, TypedValue<?>> properties = new HashMap<String, TypedValue<?>>(record.getProperties());
 			String source = (String) getPropertyValue(record, DataType.STRING, AudioWireRecordProperties.SOURCE);
-			
 			String audioFilePath = (String) getPropertyValue(record, DataType.STRING, AudioWireRecordProperties.PATH);
 			String audioFilename = (String) getPropertyValue(record, DataType.STRING, AudioWireRecordProperties.FILENAME);
 			logger.debug("Audio file path: {}", audioFilePath);
 			logger.debug("Audio filename: {}", audioFilename);
-			String pathArgument = "--path=" + audioFilePath;
-			String filenameArgument = "--filename=" + audioFilename;
+			String inputFileArgument = "--inputfile=" + audioFilePath + "/" + audioFilename;
 			
-			logger.debug("Arguments: {}, {}", pathArgument, filenameArgument);
+			logger.debug("Arguments: {}", inputFileArgument);
 			
 			SafeProcess process = null;
 			BufferedReader br = null;
-			final String[] command = { scriptPathName, pathArgument, filenameArgument };
-			logger.debug("Created command: {} {} {}", command[0], command[1], command[2]);
+			final String[] command = { scriptPathName, inputFileArgument };
+			logger.debug("Created command: {} {}", command[0], command[1]);
 	
 			try {
 				process = ProcessUtil.exec(command);
@@ -168,6 +167,7 @@ public class AudioFeatureExtractor implements ConfigurableComponent, WireEmitter
 			audioFeatureExtractorWireRecords.add(audioFeatureExtractorWireRecord);
 		}
 		Integer numberOfRecords = audioFeatureExtractorWireRecords.size();
+		logger.debug("Envelope took {}ms to process", System.currentTimeMillis() - envelopeTimer);
 		logger.debug("Emitting {} record(s)...", numberOfRecords);
 		if (numberOfRecords > 0) {
 	    	wireSupport.emit(audioFeatureExtractorWireRecords);
@@ -177,7 +177,7 @@ public class AudioFeatureExtractor implements ConfigurableComponent, WireEmitter
 
 	private void extractProperties(final Map<String, Object> properties) {
         requireNonNull(properties, "Properties cannot be null");
-        this.options = new AudioFeatureExtractorOptions(properties);
+        this.options = new AudioScriptFeatureExtractorOptions(properties);
     }
 	
 	private Object getPropertyValue(WireRecord record, DataType expectedType, String propertyName) {

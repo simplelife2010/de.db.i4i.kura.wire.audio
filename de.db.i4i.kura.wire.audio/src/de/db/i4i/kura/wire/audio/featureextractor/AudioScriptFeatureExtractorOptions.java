@@ -5,14 +5,14 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Map;
 
-public class AudioFeatureExtractorOptions {
+public class AudioScriptFeatureExtractorOptions {
 	
 	private static final String SCRIPT_PATH = "script.path";
 	private static final String SCRIPT_FILENAME = "script.filename";
 	
 	private final Map<String, Object> properties;
 	
-	AudioFeatureExtractorOptions(final Map<String, Object> properties) {
+	AudioScriptFeatureExtractorOptions(final Map<String, Object> properties) {
 		requireNonNull(properties, "Properties must not be null");
 		this.properties = properties;
 	}

@@ -77,6 +77,7 @@ public class AudioCollector implements WireEmitter, WireReceiver, ConfigurableCo
 	public void onWireReceive(WireEnvelope wireEnvelope) {
 		requireNonNull(wireEnvelope, "Wire envelope must not be null");
 		logger.debug("Received wire envelope from {}", wireEnvelope.getEmitterPid());
+		long envelopeTimer = System.currentTimeMillis();
 
 		int bufferSize = this.targetDataLine.getBufferSize();
 		byte[] audioData = new byte[bufferSize];
@@ -105,6 +106,7 @@ public class AudioCollector implements WireEmitter, WireReceiver, ConfigurableCo
     	final WireRecord audioCollectorWireRecord = new WireRecord(properties);
     	final List<WireRecord> audioCollectorWireRecords = new ArrayList<>();
     	audioCollectorWireRecords.add(audioCollectorWireRecord);
+    	logger.debug("Envelope took {}ms to process", System.currentTimeMillis() - envelopeTimer);
         logger.debug("Emitting {} record(s)...", audioCollectorWireRecords.size());
     	wireSupport.emit(audioCollectorWireRecords);
     	logger.debug("Emitting...done");

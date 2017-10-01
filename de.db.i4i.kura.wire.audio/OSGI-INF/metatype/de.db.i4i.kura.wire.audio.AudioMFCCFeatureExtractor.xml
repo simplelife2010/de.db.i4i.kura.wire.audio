@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaData xmlns="http://www.osgi.org/xmlns/metatype/v1.2.0" localization="en_us">
+    <OCD id="de.db.i4i.kura.wire.audio.AudioMFCCFeatureExtractor" 
+         name="AudioMFCCFeatureExtractor" 
+         description="A wire component that extracts MFCC features from audio files">
+        
+    </OCD>
+    
+    <Designate pid="de.db.i4i.kura.wire.audio.AudioMFCCFeatureExtractor" factoryPid="de.db.i4i.kura.wire.audio.AudioMFCCFeatureExtractor">
+        <Object ocdref="de.db.i4i.kura.wire.audio.AudioMFCCFeatureExtractor"/>
+    </Designate>
+</MetaData>
