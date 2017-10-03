@@ -12,4 +12,7 @@ public class AudioWireRecordProperties {
 	public static final String PATH = "path";
 	public static final String FILENAME = "filename";
 	public static final String MAGNITUDE_SPECTRUM = "magnitude_spectrum";
+	public static final String ANOMALY_CLASS_ID = "anomaly_class_id";
+	public static final String ANOMALY_CLASS_DESCRIPTION = "anomaly_class_description";
+	public static final String DISTORTION = "distortion";
 }

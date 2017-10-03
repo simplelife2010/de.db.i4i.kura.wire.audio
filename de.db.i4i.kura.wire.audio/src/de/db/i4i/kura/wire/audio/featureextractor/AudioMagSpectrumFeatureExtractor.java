@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -29,8 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.db.i4i.kura.wire.audio.AudioWireRecordProperties;
-import jAudioFeatureExtractor.AudioFeatures.MagnitudeSpectrum;
-import jAudioFeatureExtractor.jAudioTools.AudioSamples;
+import edu.cmu.sphinx.frontend.DataProcessor;
+import edu.cmu.sphinx.frontend.DoubleData;
+import edu.cmu.sphinx.frontend.FrontEnd;
+import edu.cmu.sphinx.frontend.transform.DiscreteFourierTransform;
+import edu.cmu.sphinx.frontend.util.AudioFileDataSource;
 
 public class AudioMagSpectrumFeatureExtractor implements WireEmitter, ConfigurableComponent, WireReceiver {
 
@@ -103,7 +105,6 @@ private static final Logger logger = LoggerFactory.getLogger(AudioMagSpectrumFea
 			
 			logger.debug("Extracting properties from record...");
 			final Map<String, TypedValue<?>> properties = new HashMap<String, TypedValue<?>>(record.getProperties());
-			String source = (String) getPropertyValue(record, DataType.STRING, AudioWireRecordProperties.SOURCE);
 			Float sampleRate = (Float) this.getPropertyValue(record, DataType.FLOAT, AudioWireRecordProperties.SAMPLE_RATE);
 			Integer sampleSize = (Integer) this.getPropertyValue(record, DataType.INTEGER, AudioWireRecordProperties.SAMPLE_SIZE);
 			Integer channels = (Integer) this.getPropertyValue(record, DataType.INTEGER, AudioWireRecordProperties.CHANNELS);
@@ -111,27 +112,28 @@ private static final Logger logger = LoggerFactory.getLogger(AudioMagSpectrumFea
 			Boolean bigEndian = (Boolean) this.getPropertyValue(record, DataType.BOOLEAN, AudioWireRecordProperties.BIG_ENDIAN);
 			byte[] audioData = (byte[]) this.getPropertyValue(record, DataType.BYTE_ARRAY, AudioWireRecordProperties.AUDIO_DATA);
 			logger.debug("Extracting properties from record...Done");
-			long convertTimer = System.currentTimeMillis();
 			AudioFormat audioFormat = new AudioFormat(sampleRate, sampleSize, channels, signed, bigEndian);
-			logger.debug("Converting audio data from byte[] to double[]...");
 			logger.debug("AudioFormat: {}", audioFormat.toString());
 			ByteArrayInputStream bais = new ByteArrayInputStream(audioData);
 			AudioInputStream ais = new AudioInputStream(bais, audioFormat, audioData.length);
-			try {
-				AudioSamples as = new AudioSamples(	ais, source + "_" + UUID.randomUUID().toString(), false);
-				double[] samplesMixedDown = as.getSamplesMixedDown();
-				logger.debug("Converting audio data took {}ms", System.currentTimeMillis() - convertTimer);
-				long featureTimer = System.currentTimeMillis();
-				MagnitudeSpectrum ms = new MagnitudeSpectrum();
-				double[] msFeature = ms.extractFeature(samplesMixedDown, sampleRate.doubleValue(), null);
-				logger.debug("Extracting magnitude spectrum took {}ms", System.currentTimeMillis() - featureTimer);
-				long doubleToByteTimer = System.currentTimeMillis();
-				properties.put(AudioWireRecordProperties.MAGNITUDE_SPECTRUM,
-						TypedValues.newByteArrayValue(doubleArrayToByteArray(msFeature)));
-				logger.debug("Converting magnitude spectrum to byte[] took {}ms", System.currentTimeMillis() - doubleToByteTimer);
-			} catch (Exception e) {
-				logger.error("Could not extract feature:", e);
-			}
+			long featureTimer = System.currentTimeMillis();
+			logger.debug("Creating AudioFileDataSource...");
+			AudioFileDataSource ds = new AudioFileDataSource(audioData.length, null);
+			logger.debug("Creating AudioFileDataSource...Done");
+			ds.setInputStream(ais, "source");
+			final ArrayList<DataProcessor> pipeline = new ArrayList<DataProcessor>();
+			pipeline.add(ds);
+			pipeline.add(new DiscreteFourierTransform());
+			FrontEnd f = new FrontEnd(pipeline);
+			logger.debug("Getting feature from pipeline...");
+			double[] msFeature = ((DoubleData) f.getData()).getValues();
+			logger.debug("Getting feature from pipeline...Done");
+			logger.debug("Extracting magnitude spectrum took {}ms", System.currentTimeMillis() - featureTimer);
+			long doubleToByteTimer = System.currentTimeMillis();
+			properties.put(AudioWireRecordProperties.MAGNITUDE_SPECTRUM,
+					TypedValues.newByteArrayValue(doubleArrayToByteArray(msFeature)));
+			logger.debug("Converting magnitude spectrum to byte[] took {}ms", System.currentTimeMillis() - doubleToByteTimer);
+			
 			properties.remove(AudioWireRecordProperties.AUDIO_DATA);
 			final WireRecord audioMagSpectrumFeatureExtractorWireRecord = new WireRecord(properties);
 			audioMagSpectrumFeatureExtractorWireRecords.add(audioMagSpectrumFeatureExtractorWireRecord);
