@@ -1,30 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MetaData xmlns="http://www.osgi.org/xmlns/metatype/v1.2.0" localization="en_us">
-    <OCD id="de.db.i4i.kura.wire.audio.AudioScriptFeatureExtractor" 
-         name="AudioScriptFeatureExtractor" 
-         description="A wire component that extracts features from audio files using Python scripts">
+    <OCD id="de.db.i4i.kura.wire.audio.AudioFeatureMatcher" 
+         name="AudioFeatureMatcher" 
+         decodebookion="A wire component that matches audio features against a codebook">
         
-        <AD id="script.path"
-            name="script.path"
+        <AD id="codebook.path"
+            name="codebook.path"
             type="String"
             cardinality="0"
             required="true"
-            default="/opt/i4i/scripts/features"
-            description="The path where the feature extraction script is located">
+            default="/opt/i4i/codebooks"
+            decodebookion="The path where the feature extraction codebook is located">
         </AD>
         
-        <AD id="script.filename"
-            name="script.filename"
+        <AD id="codebook.filename"
+            name="codebook.filename"
             type="String"
             cardinality="0"
             required="true"
-            default="feature.py"
-            description="The name of the feature extraction script">
+            default="codebook.json"
+            decodebookion="The name of the feature extraction codebook">
         </AD>
         
     </OCD>
     
-    <Designate pid="de.db.i4i.kura.wire.audio.AudioScriptFeatureExtractor" factoryPid="de.db.i4i.kura.wire.audio.AudioScriptFeatureExtractor">
-        <Object ocdref="de.db.i4i.kura.wire.audio.AudioScriptFeatureExtractor"/>
+    <Designate pid="de.db.i4i.kura.wire.audio.AudioFeatureMatcher" factoryPid="de.db.i4i.kura.wire.audio.AudioFeatureMatcher">
+        <Object ocdref="de.db.i4i.kura.wire.audio.AudioFeatureMatcher"/>
     </Designate>
 </MetaData>

@@ -45,6 +45,7 @@ public class AudioFeatureMatcher implements ConfigurableComponent, WireEmitter, 
 	
 	private AudioFeatureMatcherOptions options;
 	private List<Codebook> codebooks;
+	private List<String> features;
 
 	public void bindWireHelperService(final WireHelperService wireHelperService) {
         if (isNull(this.wireHelperService)) {
@@ -109,10 +110,12 @@ public class AudioFeatureMatcher implements ConfigurableComponent, WireEmitter, 
 			
 			final Map<String, TypedValue<?>> properties = new HashMap<String, TypedValue<?>>(record.getProperties());
 			Map<String, Double> featureVector = new HashMap<String, Double>();
-			for (String propertyName : properties.keySet()) {
-				if (propertyName.startsWith("feature_")) {
-					featureVector.put(propertyName, (Double) getPropertyValue(record, DataType.DOUBLE, propertyName));
-				}
+			logger.debug("Retrieving {} features from record", this.features.size());
+			for (String propertyName : this.features) {
+				Double propertyValue = (Double) getPropertyValue(record, DataType.DOUBLE, propertyName);
+				requireNonNull(propertyValue, "Missing property:" + propertyName);
+				featureVector.put(propertyName, propertyValue);
+				logger.debug("Added property to vector: {} ({})", propertyName, propertyValue);
 			}
 
 			Integer anomalyClassId = null;
@@ -164,6 +167,8 @@ public class AudioFeatureMatcher implements ConfigurableComponent, WireEmitter, 
 	
 	
 	private List<Codebook> readCodebooksFromConfig() {
+		logger.debug("Reading codebooks...");
+		this.features = new ArrayList<String>();
 		List<Codebook> codebooks = new ArrayList<Codebook>();
 		String codebookPathName = this.options.getCodebookPath() + "/" + this.options.getCodebookFilename();
 		FileInputStream fis;
@@ -171,6 +176,14 @@ public class AudioFeatureMatcher implements ConfigurableComponent, WireEmitter, 
 			fis = new FileInputStream(codebookPathName);
 			InputStreamReader reader = new InputStreamReader(fis);
 			JsonObject jsonObject = Json.parse(reader).asObject();
+			requireNonNull(jsonObject, "Could not retrieve main Json object");
+			JsonArray jsonFeatures = jsonObject.get("features").asArray();
+			requireNonNull(jsonFeatures, "Could not retrieve feature array");
+			logger.debug("Codebook configuration specifies {} features", jsonFeatures.size());
+			for (JsonValue jsonFeature : jsonFeatures) {
+				this.features.add(jsonFeature.asString());
+				logger.debug("Added to feature list: {}", jsonFeature.asString());
+			}
 			JsonArray jsonCodebooks = jsonObject.get("codebooks").asArray();
 			for (JsonValue jsonCodebook : jsonCodebooks) {
 				JsonObject anomalyClass = jsonCodebook.asObject().get("anomalyClass").asObject();
@@ -191,6 +204,7 @@ public class AudioFeatureMatcher implements ConfigurableComponent, WireEmitter, 
 				logger.debug("Added codebook: {}", codebook.toString());
 			}
 			fis.close();
+			logger.debug("Reading codebooks...Done");
 			return codebooks;
 		} catch (FileNotFoundException e) {
 			logger.error("Could not find codebook file {}", codebookPathName);
@@ -200,6 +214,7 @@ public class AudioFeatureMatcher implements ConfigurableComponent, WireEmitter, 
 			return null;
 		} catch (Exception e) {
 			logger.error("Could not parse codebook file {}", codebookPathName);
+			logger.error(e.toString());
 			return null;
 		}
 	}
